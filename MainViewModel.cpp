@@ -3,6 +3,7 @@
 using Vector3 = System::Numerics::Vector3;
 using BoundingBox = HelixToolkit::Maths::BoundingBox;
 using ConvExt = HelixToolkit::Wpf::ConverterExtensions;
+using uchar = unsigned char;
 
 #include "SdkLoader.h"
 #include <codecvt>
@@ -37,11 +38,14 @@ namespace FbxSdkHelix
 		auto geom = ConvExt::ToWndMeshGeometry3D(mesh, true);
 		_modelGroup->Children->Add(gcnew GeometryModel3D(geom, greenMaterial));
 #endif        
-		GetMeshes((FbxNode*)(_sdkLoader->_scene));//->GetRootNode()
+		GetMeshes((FbxNode*)(_sdkLoader->_scene));
+
+		Vector3D ra = Vector3D(1, 0, 0);
+		AxisAngleRotation3D^ aar = gcnew AxisAngleRotation3D(ra, 90);
+		RotateTransform3D^ rt = gcnew RotateTransform3D(aar);
+		_modelGroup->Transform = rt;
 
 		_modelVisual->Content = _modelGroup;
-
-		// Set the property, which will be bound to the Content property of the ModelVisual3D (see MainWindow.xaml)
 		Model = _modelGroup;
 	}
 
@@ -64,14 +68,25 @@ namespace FbxSdkHelix
 		if (!node)
 			return;
 		int geometryCount = node->GetSrcObjectCount<FbxGeometry>();
-		for (int i = 0; i < geometryCount; ++i)
+		auto greenMt = MaterialHelper::CreateMaterial(Colors::Green);
+		for (int i = 0; i < geometryCount; i++)
 		{
 			FbxGeometry* geometry = node->GetSrcObject<FbxGeometry>(i);
 			if (geometry && geometry->GetAttributeType() == FbxNodeAttribute::eMesh)
 			{
-				FbxMesh* mesh = static_cast<FbxMesh*>(geometry);
+				FbxMesh* mesh = (FbxMesh*) geometry;
 				auto meshBuilder = gcnew MeshBuilder(false, false, false);
-
+				/*
+				FbxSurfaceMaterial* material = mesh->GetNode()->GetMaterial(0); // Get the first material
+				if (material) { 
+					FbxProperty diffusePr = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
+					if (diffusePr.IsValid()) {
+						FbxDouble3 color = diffusePr.Get<FbxDouble3>();
+						greenMt = MaterialHelper::CreateMaterial(
+							Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+					}
+				}
+				*/
 				int polygonCount = mesh->GetPolygonCount();
 				FbxVector4* controlPoints = mesh->GetControlPoints();
 				for (int j = 0; j < polygonCount; j++)
@@ -82,17 +97,17 @@ namespace FbxSdkHelix
 					{
 						int vertexIndex = mesh->GetPolygonVertex(j, k);
 						FbxVector4 vertex = controlPoints[vertexIndex];
-						points->Add(Vector3(vertex[0], vertex[1], vertex[2]));
+						points->Add(Vector3((float)vertex[0], (float)vertex[1], (float)vertex[2]));
 					}
 					meshBuilder->AddPolygon(points);
 				}
-				auto hxMesh = meshBuilder->ToMesh();
-				auto hxGeom = ConvExt::ToWndMeshGeometry3D(hxMesh, true);
-				auto greenMaterial = MaterialHelper::CreateMaterial(Colors::Green);
-				_modelGroup->Children->Add(gcnew GeometryModel3D(hxGeom, greenMaterial));
+				_modelGroup->Children->Add(
+					gcnew GeometryModel3D(
+						ConvExt::ToWndMeshGeometry3D(meshBuilder->ToMesh(), true),
+						greenMt));
 			}
 		}
-		for (int i = 0; i < node->GetChildCount(); ++i)
+		for (int i = 0; i < node->GetChildCount(); i++)
 			GetMeshes(node->GetChild(i));
 	}
 }
