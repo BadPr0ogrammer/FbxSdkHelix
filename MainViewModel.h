@@ -12,16 +12,17 @@ namespace FbxSdkHelix
 {
     public ref class MainViewModel
     {
+    private:
+        Model3DGroup^  _modelGroup = nullptr;
+        Model3D^       _model = nullptr;
+        SdkLoader*     _sdkLoader = nullptr;
     public:
+        ModelVisual3D^ _modelVisual = nullptr;
+
         MainViewModel(System::String^ fname);
         ~MainViewModel();
-
-        ModelVisual3D^ _modelVisual = nullptr;
-    private: 
-        Model3DGroup^ _modelGroup = nullptr;
-        MeshBuilder^ _meshBuilder = nullptr;
-        Model3D^ _model = nullptr;
-        SdkLoader* _sdkLoader = nullptr;
+       
+        void GetMeshes(FbxNode* node);
 
     public: 
         property Model3D^ Model {
