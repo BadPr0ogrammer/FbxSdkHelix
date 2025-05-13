@@ -68,25 +68,33 @@ namespace FbxSdkHelix
 		if (!node)
 			return;
 		int geometryCount = node->GetSrcObjectCount<FbxGeometry>();
-		auto greenMt = MaterialHelper::CreateMaterial(Colors::Green);
 		for (int i = 0; i < geometryCount; i++)
 		{
 			FbxGeometry* geometry = node->GetSrcObject<FbxGeometry>(i);
 			if (geometry && geometry->GetAttributeType() == FbxNodeAttribute::eMesh)
 			{
-				FbxMesh* mesh = (FbxMesh*) geometry;
+				auto greenMt = MaterialHelper::CreateMaterial(Colors::Green);
+
+				FbxMesh* mesh = geometry->GetNode()->GetMesh();
 				auto meshBuilder = gcnew MeshBuilder(false, false, false);
-				/*
-				FbxSurfaceMaterial* material = mesh->GetNode()->GetMaterial(0); // Get the first material
-				if (material) { 
-					FbxProperty diffusePr = material->FindProperty(FbxSurfaceMaterial::sDiffuse);
-					if (diffusePr.IsValid()) {
-						FbxDouble3 color = diffusePr.Get<FbxDouble3>();
-						greenMt = MaterialHelper::CreateMaterial(
-							Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+				
+				FbxLayer* layer = mesh->GetLayer(0);
+				FbxLayerElementMaterial* pMaterialLayer = layer->GetMaterials();
+				int numMatIndices = pMaterialLayer->GetIndexArray().GetCount();
+				for (int k = 0; k < numMatIndices; k++)
+				{
+					int matIndex = pMaterialLayer->GetIndexArray()[k];
+					FbxSurfaceMaterial* smat = mesh->GetNode()->GetMaterial(matIndex);
+					if (smat->GetClassId().Is(FbxSurfaceLambert::ClassId))
+					{
+						FbxSurfaceLambert* lam = (FbxSurfaceLambert*)smat;
+						FbxPropertyT<FbxDouble3> p = lam->Emissive;//Diffuse
+						FbxDouble3 color = p.Get();
+						greenMt = MaterialHelper::CreateMaterial(Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+						break;
 					}
 				}
-				*/
+
 				int polygonCount = mesh->GetPolygonCount();
 				FbxVector4* controlPoints = mesh->GetControlPoints();
 				for (int j = 0; j < polygonCount; j++)
@@ -111,3 +119,35 @@ namespace FbxSdkHelix
 			GetMeshes(node->GetChild(i));
 	}
 }
+/*
+fbxsdk::FbxSurfaceMaterial* material = mesh->GetNode()->GetMaterial(0);
+FbxLayerElementMaterial* materialEl = mesh->GetElementMaterial();
+FbxLayerElementArrayTemplate<int>& idxs = materialEl->GetIndexArray();
+if (idxs[0] < mesh->GetNode()->GetMaterialCount() && idxs[0] > -1)
+	material = mesh->GetNode()->GetMaterial(idxs[0]);
+
+FbxProperty diffusePr = material->FindProperty( fbxsdk::FbxSurfaceMaterial::sDiffuse);
+FbxProperty specularPr = material->FindProperty(fbxsdk::FbxSurfaceMaterial::sSpecular);
+FbxProperty ambientPr = material->FindProperty( fbxsdk::FbxSurfaceMaterial::sAmbient);
+FbxProperty emissivePr = material->FindProperty(fbxsdk::FbxSurfaceMaterial::sEmissive);
+if (diffusePr.IsValid())
+{
+	FbxDouble3 color = diffusePr.Get<FbxDouble3>();
+	//greenMt = MaterialHelper::CreateMaterial(Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+}
+if (specularPr.IsValid())
+{
+	FbxDouble3 color = specularPr.Get<FbxDouble3>();
+	//greenMt = MaterialHelper::CreateMaterial(Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+}
+if (ambientPr.IsValid())
+{
+	FbxDouble3 color = ambientPr.Get<FbxDouble3>();
+	//greenMt = MaterialHelper::CreateMaterial(Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+}
+if (emissivePr.IsValid())
+{
+	FbxDouble3 color = emissivePr.Get<FbxDouble3>();
+	//greenMt = MaterialHelper::CreateMaterial(Color::FromRgb((uchar)(255 * color[0]), (uchar)(255 * color[1]), (uchar)(255 * color[2])));
+}
+*/

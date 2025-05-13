@@ -22,7 +22,6 @@ namespace FbxSdkHelix
 	public ref class MainWindow : Window
 	{
 		HelixViewport3D^ _viewport;
-		GridLinesVisual3D^ _gridLine;
 	public:
 		MainWindow(MainViewModel^ model);
 	};

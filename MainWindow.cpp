@@ -18,15 +18,6 @@ namespace FbxSdkHelix
 
         _viewport->Children->Add(model->_modelVisual);
 
-        _gridLine = gcnew GridLinesVisual3D();
-        _gridLine->Width = 8;
-        _gridLine->Length = 8;
-        _gridLine->MajorDistance = 1;
-        _gridLine->MinorDistance = 1;
-        _gridLine->Thickness = 0.01;
-
-        _viewport->Children->Add(_gridLine);
-
 		DataContext = model;
         Content = _viewport;
 	}
